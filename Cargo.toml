@@ -1,0 +1,13 @@
+[package]
+name = "rocket-starter"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+members = [".", "api", "db", "rocket", "serde", "utils"]
+
+[dependencies]
+api = { path = "api" }
+rocket = { path = "rocket" }
+db = { path = "db" }
+utils = { path = "utils" }

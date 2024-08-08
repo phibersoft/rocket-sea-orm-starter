@@ -1,0 +1,12 @@
+[package]
+name = "db"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-trait = { version = "0.1.81" }
+rocket_db_pools = { version = "0.2.0" }
+sea-orm = { version = "1.0.0", features = ["macros", "sqlx-postgres", "runtime-tokio"] }
+
+rocket = { path = "../rocket" }
+serde = { path = "../serde" }

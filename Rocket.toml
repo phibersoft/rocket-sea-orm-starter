@@ -1,0 +1,8 @@
+[default]
+secret_skey="secret"
+
+[test]
+log_level = "critical"
+
+[default.databases.sea_orm]
+url = "postgres://postgres:1234@localhost/rocket_example"
