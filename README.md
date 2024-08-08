@@ -42,3 +42,4 @@ cargo test
 
 - [ ] Add example for Relationship
 - [ ] DockerFile for deployment
+- [ ] CI/CD Pipeline
