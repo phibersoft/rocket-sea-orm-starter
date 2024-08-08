@@ -38,6 +38,20 @@ For testing,
 cargo test
 ```
 
+## Docker
+
+Build the docker image
+
+```bash
+docker build -t rocket-sea-orm-starter .
+```
+
+Run the docker container
+
+```bash
+docker run -p 8080:8080 rocket-sea-orm-starter
+```
+
 ## TODO
 
 - [ ] Add example for Relationship
