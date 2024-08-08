@@ -9,7 +9,7 @@ pub fn rocket() -> Rocket<Build> {
     let rocket = rocket::build()
         .attach(pool::Db::init())
         .attach(AdHoc::try_on_ignite("Migrations", run_migrations))
-        .mount("/", routes::list::routes());
+        .mount("/task", routes::task::routes());
 
     rocket
 }
