@@ -1,6 +1,6 @@
-use sea_orm::{ConnectionTrait, DbConn, EntityTrait, Schema, Statement};
+use sea_orm::{ConnectionTrait, DbConn, EntityTrait, Schema};
 
-use crate::tables::Task;
+use crate::tables::{Progress, Task};
 
 async fn create_table<E>(db: &DbConn, entity: E)
 where
@@ -17,9 +17,7 @@ where
 }
 
 pub async fn create_tables(db: &DbConn) {
-    let builder = db.get_database_backend();
-    let statement = Statement { db_backend: builder, values: None, sql: "SELECT 'CREATE DATABASE rocket_starter' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'rocket_starter')\\gexec".to_string() };
-    let _ = db.execute(statement).await;
     println!("create_tables running...");
     create_table(db, Task).await;
+    create_table(db, Progress).await;
 }
