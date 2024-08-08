@@ -7,7 +7,7 @@ use rocket::figment::{
     Figment,
     providers::{Env, Format, Toml},
 };
-use rocket::local::asynchronous::Client;
+pub use rocket::local::asynchronous::Client;
 
 pub struct TestContext {
     db_name: String,

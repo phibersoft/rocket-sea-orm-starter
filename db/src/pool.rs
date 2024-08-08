@@ -23,7 +23,16 @@ impl rocket_db_pools::Pool for SeaOrmPool {
 
     async fn init(figment: &Figment) -> Result<Self, Self::Error> {
         let config = figment.extract::<Config>().unwrap();
-        let mut options = ConnectOptions::new(&config.url);
+
+        let profile = env::var("ROCKET_PROFILE");
+        let is_testing = profile.is_ok() && profile.unwrap() == "test";
+
+        let connection_url = match is_testing {
+            true => env::var("ROCKET_APP_DATABASES_SEA_ORM_URL").unwrap(),
+            false => config.url
+        };
+
+        let mut options = ConnectOptions::new(connection_url);
         options.max_connections(100)
             .min_connections(5)
             .connect_timeout(Duration::from_secs(8))
@@ -32,12 +41,11 @@ impl rocket_db_pools::Pool for SeaOrmPool {
             .idle_timeout(Duration::from_secs(8))
             .max_lifetime(Duration::from_secs(8));
 
-        let profile = env::var("ROCKET_PROFILE");
-        if profile.is_ok() {
-            if profile.unwrap() == "test" {
-                options.sqlx_logging(false);
-            }
+
+        if is_testing {
+            options.sqlx_logging(false);
         }
+
 
         let conn = sea_orm::Database::connect(options).await.unwrap();
         Ok(SeaOrmPool { conn })
