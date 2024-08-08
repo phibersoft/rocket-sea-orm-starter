@@ -41,5 +41,5 @@ cargo test
 ## TODO
 
 - [ ] Add example for Relationship
-- [ ] DockerFile for deployment
+- [X] DockerFile for deployment
 - [ ] CI/CD Pipeline
