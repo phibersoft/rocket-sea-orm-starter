@@ -1,6 +1,5 @@
 use std::env;
 
-use cookie::CookieBuilder;
 use cookie::time::{Duration, OffsetDateTime};
 
 use db::{Connection, pool};
@@ -23,8 +22,9 @@ pub struct AuthenticationResponse {
     token: String,
 }
 
-fn generate_cookie(user: user::UserResponse) -> Result<(String, CookieBuilder<'static>), ErrorResponse> {
-    let token = JWT::create_jwt(user);
+fn common_response(user: user::Model, cookie_jar: &CookieJar<'_>) -> JsonResponse<AuthenticationResponse> {
+    let user_response: user::UserResponse = user.into();
+    let token = JWT::create_jwt(user_response.clone());
 
     if token.is_err() {
         return Err(ErrorResponse::from("Cookie generation."));
@@ -34,8 +34,14 @@ fn generate_cookie(user: user::UserResponse) -> Result<(String, CookieBuilder<'s
     let jwt_expires: i64 = env::var("JWT_EXPIRES").unwrap().parse().expect("JWT_EXPIRES should be parseable.");
     let expiration_time = OffsetDateTime::now_utc() + Duration::seconds(jwt_expires);
 
-    Ok((token.clone(), Cookie::build(("auth", token))
-        .expires(expiration_time)))
+    let cookie = Cookie::build(("auth", token.clone())).expires(expiration_time);
+
+    cookie_jar.add(cookie);
+
+    Ok(Json(AuthenticationResponse {
+        user: user_response,
+        token,
+    }))
 }
 
 #[post("/register", format = "json", data = "<input_data>")]
@@ -46,20 +52,7 @@ async fn register(cookie_jar: &CookieJar<'_>, conn: Connection<pool::Db>, input_
     let response: Result<user::Model, DbErr> = user.insert(&conn.into_inner()).await;
 
     match response {
-        Ok(user) => {
-            let cookie = generate_cookie(user::UserResponse::from(user.clone()));
-
-            match cookie {
-                Ok(cookie) => {
-                    cookie_jar.add(cookie.1);
-                    Ok(Json(AuthenticationResponse {
-                        user: user::UserResponse::from(user),
-                        token: cookie.0,
-                    }))
-                }
-                Err(error_response) => Err(error_response)
-            }
-        }
+        Ok(user) => common_response(user, cookie_jar),
         Err(e) => Err(ErrorResponse::database(e))
     }
 }
@@ -76,20 +69,7 @@ async fn login(cookie_jar: &CookieJar<'_>, conn: Connection<pool::Db>, input_dat
     match response {
         Ok(user) => {
             match user {
-                Some(user) => {
-                    let cookie = generate_cookie(user::UserResponse::from(user.clone()));
-
-                    match cookie {
-                        Ok(cookie) => {
-                            cookie_jar.add(cookie.1);
-                            Ok(Json(AuthenticationResponse {
-                                user: user::UserResponse::from(user),
-                                token: cookie.0,
-                            }))
-                        }
-                        Err(error_response) => Err(error_response)
-                    }
-                }
+                Some(user) => common_response(user, cookie_jar),
                 None => Err(ErrorResponse::not_found())
             }
         }

@@ -37,7 +37,7 @@ pub struct RegisterInput {
     pub password: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct UserResponse {
     pub id: i32,
     pub name: String,
