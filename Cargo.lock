@@ -83,6 +83,7 @@ version = "0.1.0"
 dependencies = [
  "db",
  "rocket 0.1.0",
+ "serde 0.1.0",
  "utils",
 ]
 
@@ -1962,6 +1963,7 @@ name = "serde"
 version = "0.1.0"
 dependencies = [
  "serde 1.0.204",
+ "serde_json",
 ]
 
 [[package]]

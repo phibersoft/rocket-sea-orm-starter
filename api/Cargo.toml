@@ -7,3 +7,4 @@ edition = "2021"
 rocket = { path = "../rocket" }
 db = { path = "../db" }
 utils = { path = "../utils" }
+serde = { path = "../serde" }
