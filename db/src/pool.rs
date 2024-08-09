@@ -2,12 +2,12 @@ use std::env;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use rocket_db_pools::{Config, rocket::figment::Figment};
 use rocket_db_pools::Database;
+use rocket_db_pools::rocket::figment::Figment;
 use sea_orm::ConnectOptions;
 
 #[derive(Database, Debug)]
-#[database("sea_orm")]
+#[database("rocket_starter")]
 pub struct Db(SeaOrmPool);
 
 #[derive(Debug, Clone)]
@@ -21,16 +21,11 @@ impl rocket_db_pools::Pool for SeaOrmPool {
 
     type Error = sea_orm::DbErr;
 
-    async fn init(figment: &Figment) -> Result<Self, Self::Error> {
-        let config = figment.extract::<Config>().unwrap();
-
+    async fn init(_figment: &Figment) -> Result<Self, Self::Error> {
         let profile = env::var("ROCKET_PROFILE");
         let is_testing = profile.is_ok() && profile.unwrap() == "test";
 
-        let connection_url = match is_testing {
-            true => env::var("ROCKET_APP_DATABASES_SEA_ORM_URL").unwrap(),
-            false => config.url
-        };
+        let connection_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
 
         let mut options = ConnectOptions::new(connection_url);
         options.max_connections(100)

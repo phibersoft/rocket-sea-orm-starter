@@ -11,3 +11,4 @@ api = { path = "api" }
 rocket = { path = "rocket" }
 db = { path = "db" }
 utils = { path = "utils" }
+dotenvy = { version = "0.15.7" }
