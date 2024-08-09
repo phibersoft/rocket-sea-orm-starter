@@ -1,24 +1,27 @@
 use std::env;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use chrono::Utc;
 use jsonwebtoken::{Algorithm, decode, DecodingKey, encode, EncodingKey, Header, Validation};
 use jsonwebtoken::errors::ErrorKind;
 
-use rocket::http::Status;
+use db::tables::user::UserResponse;
 use rocket::Request;
 use rocket::request::{FromRequest, Outcome};
 use serde::{Deserialize, Serialize};
 
-use crate::types::ErrorResponse;
+use crate::error::ErrorResponse;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Claims {
-    pub subject_id: i32,
+    pub id: i32,
+    pub email: String,
+    pub name: String,
     exp: usize,
 }
 
 #[derive(Debug)]
 pub struct JWT {
+    #[allow(unused)]
     pub claims: Claims,
 }
 
@@ -26,53 +29,64 @@ pub struct JWT {
 impl<'r> FromRequest<'r> for JWT {
     type Error = ErrorResponse;
 
-    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, ErrorResponse> {
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        match Self::check_jwt(request) {
+            Ok(jwt) => Outcome::Success(jwt),
+            Err(error_response) => error_response.as_outcome::<Self>()
+        }
+    }
+}
+
+impl JWT {
+    fn secret() -> String {
+        env::var("JWT_SECRET").expect("JWT_SECRET must be set.")
+    }
+
+    pub fn create_jwt(user: UserResponse) -> Result<String, jsonwebtoken::errors::Error> {
+        let seconds: u64 = env::var("JWT_EXPIRES").expect("JWT_EXPIRES must be set.").parse().expect("JWT_EXPIRES must be parseable.");
+        let expiration = SystemTime::now().checked_add(Duration::from_secs(seconds)).expect("Invalid Timestamp").duration_since(UNIX_EPOCH).expect("Time went backwards.").as_secs();
+
+        let claims = Claims {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            exp: expiration as usize,
+        };
+
+        let header = Header::new(Algorithm::HS512);
+
+        encode(&header, &claims, &EncodingKey::from_secret(Self::secret().as_bytes()))
+    }
+
+    pub fn decode_jwt(token: String) -> Result<Claims, ErrorKind> {
+        let token = token.trim_start_matches("Bearer").trim();
+
+        match decode::<Claims>(
+            &token,
+            &DecodingKey::from_secret(Self::secret().as_bytes()),
+            &Validation::new(Algorithm::HS512),
+        ) {
+            Ok(token) => Ok(token.claims),
+            Err(err) => Err(err.kind().to_owned())
+        }
+    }
+
+    pub fn check_jwt(request: &Request) -> Result<JWT, ErrorResponse> {
         fn is_valid(key: &str) -> Result<Claims, ErrorKind> {
-            Ok(decode_jwt(key.to_string())?)
+            Ok(JWT::decode_jwt(key.to_string())?)
         }
 
         match request.headers().get_one("authorization") {
-            None => {
-                Outcome::Error((Default::default(), ErrorResponse::unauthorized()))
-            }
+            None => Err(ErrorResponse::unauthorized()),
             Some(key) => match is_valid(key) {
-                Ok(claims) => {
-                    Outcome::Success(JWT { claims })
-                }
+                Ok(claims) => Ok(JWT { claims }),
                 Err(err) => match err {
-                    ErrorKind::ExpiredSignature => Outcome::Error((Status::new(402), ErrorResponse::new(Some("Expired signature"), None))),
-                    ErrorKind::InvalidToken => Outcome::Error((Status::new(401), ErrorResponse::new(Some("Invalid Token"), None))),
-                    _ => Outcome::Error((Status::new(401), ErrorResponse::new(Some("Other type of errors"), None)))
+                    ErrorKind::ExpiredSignature => Err(ErrorResponse::from(("Expired Signature. Login again.", 401))),
+                    ErrorKind::InvalidToken => Err(ErrorResponse::from(("Invalid Token.", 401))),
+                    _ => Err(ErrorResponse::from(("JWT Decode Error. (unhandled)", 401)))
                 }
             },
         }
     }
 }
 
-pub fn create_jwt(id: i32) -> Result<String, jsonwebtoken::errors::Error> {
-    let secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set.");
-    let expiration = Utc::now().checked_add_signed(chrono::Duration::seconds(60)).expect("Invalid timestamp").timestamp();
-
-    let claims = Claims {
-        subject_id: id,
-        exp: expiration as usize,
-    };
-
-    let header = Header::new(Algorithm::HS512);
-
-    encode(&header, &claims, &EncodingKey::from_secret(secret.as_bytes()))
-}
-
-pub fn decode_jwt(token: String) -> Result<Claims, ErrorKind> {
-    let secret = env::var("JWT_SECRET").expect("JWT_SECRET must be set.");
-    let token = token.trim_start_matches("Bearer").trim();
-
-    match decode::<Claims>(
-        &token,
-        &DecodingKey::from_secret(secret.as_bytes()),
-        &Validation::new(Algorithm::HS512),
-    ) {
-        Ok(token) => Ok(token.claims),
-        Err(err) => Err(err.kind().to_owned())
-    }
-}

@@ -8,3 +8,5 @@ rocket = { path = "../rocket" }
 db = { path = "../db" }
 utils = { path = "../utils" }
 serde = { path = "../serde" }
+jsonwebtoken = { version = "9.3.0" }
+cookie = { version = "0.18.1" }
