@@ -43,6 +43,7 @@ COPY --from=build /build/main .
 
 # copy runtime assets which may or may not exist
 COPY --from=build /build/Rocket.toml .
+COPY --from=build /build/.env .
 
 ENV ROCKET_ADDRESS=0.0.0.0
 ENV ROCKET_PORT=8080
