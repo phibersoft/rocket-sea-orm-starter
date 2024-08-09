@@ -4,24 +4,26 @@ use rocket::{Build, catch, catchers, Request, Rocket};
 use rocket::fairing::AdHoc;
 use rocket::http::Status;
 
-use crate::types::ErrorResponse;
+use crate::error::ErrorResponse;
 
-mod routes;
-mod types;
+pub mod routes;
+pub mod types;
+pub mod authentication;
+pub mod error;
 
 #[catch(404)]
 fn not_found() -> ErrorResponse {
-    ErrorResponse::new(Some("Not found."), Some(404))
+    ErrorResponse::from(("Not found", 404))
 }
 
 #[catch(422)]
 fn unprocessable_entity() -> ErrorResponse {
-    ErrorResponse::new(Some("You sent wrong type of data. Check your body."), Some(422))
+    ErrorResponse::from(("You sent wrong type of data. Check your body.", 422))
 }
 
 #[catch(default)]
 fn default_catcher(status: Status, _: &Request) -> ErrorResponse {
-    ErrorResponse::new(Some("Something went wrong."), Some(status.code as usize))
+    ErrorResponse::from(("Something went wrong.", status.code as usize))
 }
 
 pub fn rocket() -> Rocket<Build> {
@@ -30,5 +32,6 @@ pub fn rocket() -> Rocket<Build> {
         .attach(AdHoc::try_on_ignite("Migrations", run_migrations))
         .mount("/task", routes::task::routes())
         .mount("/progress", routes::progress::routes())
+        .mount("/auth", routes::auth::routes())
         .register("/", catchers![not_found, unprocessable_entity, default_catcher])
 }
