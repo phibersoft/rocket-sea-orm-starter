@@ -3,10 +3,6 @@ use std::path::Path;
 
 use db::sea_orm;
 use db::sea_orm::ConnectionTrait;
-use rocket::figment::{
-    Figment,
-    providers::{Env, Format, Toml},
-};
 pub use rocket::local::asynchronous::Client;
 
 pub struct TestContext {
@@ -26,11 +22,7 @@ impl TestContext {
     pub async fn init(test_name: &str) -> Self {
         env::set_var("ROCKET_PROFILE", "test");
 
-        let full_url = Figment::new()
-            .merge(Toml::file("Rocket.toml"))
-            .merge(Env::prefixed("ROCKET_APP_").split("_"))
-            .extract_inner::<String>("default.databases.sea_orm.url")
-            .unwrap();
+        let full_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
 
         let url = Path::new(&full_url);
         let base_url = url.parent().unwrap().to_str().unwrap().to_owned();
@@ -55,7 +47,7 @@ impl TestContext {
         let url = format!("{}/{}", base_url, db_name);
 
         // Override the DB url by adding an env var
-        env::set_var("ROCKET_APP_DATABASES_SEA_ORM_URL", url);
+        env::set_var("DATABASE_URL", url);
 
         let rocket = api::rocket();
         let client = Client::untracked(rocket)
