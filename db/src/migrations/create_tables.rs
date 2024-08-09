@@ -1,6 +1,6 @@
 use sea_orm::{ConnectionTrait, DbConn, EntityTrait, Schema};
 
-use crate::tables::{Progress, Task};
+use crate::tables::{Progress, Task, User};
 
 async fn create_table<E>(db: &DbConn, entity: E)
 where
@@ -20,4 +20,5 @@ pub async fn create_tables(db: &DbConn) {
     println!("create_tables running...");
     create_table(db, Task).await;
     create_table(db, Progress).await;
+    create_table(db, User).await;
 }
