@@ -10,6 +10,8 @@ pub struct Model {
     pub id: i32,
     pub name: String,
     pub email: String,
+
+    #[serde(skip_serializing)]
     pub password: String,
 }
 
@@ -35,23 +37,6 @@ pub struct RegisterInput {
     pub name: String,
     pub email: String,
     pub password: String,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-pub struct UserResponse {
-    pub id: i32,
-    pub name: String,
-    pub email: String,
-}
-
-impl From<Model> for UserResponse {
-    fn from(value: Model) -> Self {
-        Self {
-            id: value.id,
-            name: value.name,
-            email: value.email,
-        }
-    }
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
