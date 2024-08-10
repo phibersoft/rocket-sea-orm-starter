@@ -4,7 +4,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use jsonwebtoken::{Algorithm, decode, DecodingKey, encode, EncodingKey, Header, Validation};
 use jsonwebtoken::errors::ErrorKind;
 
-use db::tables::user::UserResponse;
+use db::tables::user;
 use rocket::Request;
 use rocket::request::{FromRequest, Outcome};
 use serde::{Deserialize, Serialize};
@@ -42,7 +42,7 @@ impl JWT {
         env::var("JWT_SECRET").expect("JWT_SECRET must be set.")
     }
 
-    pub fn create_jwt(user: UserResponse) -> Result<String, jsonwebtoken::errors::Error> {
+    pub fn create_jwt(user: user::Model) -> Result<String, jsonwebtoken::errors::Error> {
         let seconds: u64 = env::var("JWT_EXPIRES").expect("JWT_EXPIRES must be set.").parse().expect("JWT_EXPIRES must be parseable.");
         let expiration = SystemTime::now().checked_add(Duration::from_secs(seconds)).expect("Invalid Timestamp").duration_since(UNIX_EPOCH).expect("Time went backwards.").as_secs();
 
